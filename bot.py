@@ -48,31 +48,32 @@ def parse_plancke_time(time_str):
         print(f"Error parsing time: {e}")
         return None
 
-async def get_last_login_from_plancke(username):
-    url = f"https://plancke.io/hypixel/player/stats/{username}"
+async def get_last_login_from_hypixel(username):
+    uuid_url = f"https://api.mojang.com/users/profiles/minecraft/{username}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
+        async with session.get(uuid_url) as resp:
             if resp.status != 200:
-                print(f"Failed to fetch page for {username}: Status {resp.status}")
+                print(f"Could not find UUID for {username}")
                 return None
-            html = await resp.text()
+            data = await resp.json()
+            uuid = data.get("id")
 
-    soup = BeautifulSoup(html, "html.parser")
+        hypixel_url = f"https://api.hypixel.net/player?key={HYPIXEL_API_KEY}&uuid={uuid}"
+        async with session.get(hypixel_url) as resp:
+            if resp.status != 200:
+                print(f"Could not fetch data from Hypixel for {username}")
+                return None
+            data = await resp.json()
+            last_login_ts = data.get("player", {}).get("lastLogin")
 
-    # Look for <b> tag with "Last login: "
-    login_tag = soup.find("b", string=lambda text: text and "Last login:" in text)
-
-    if login_tag:
-        last_login_str = login_tag.next_sibling.strip() if login_tag.next_sibling else None
-        if last_login_str:
-            print(f"Extracted last login: {last_login_str}")
-            return parse_plancke_time(last_login_str)  # Convert to datetime
-        else:
-            print("Found tag, but couldn't extract timestamp")
-    else:
-        print("Could not find Last Login tag")
-
-    return None
+            if last_login_ts:
+                dt = datetime.fromtimestamp(last_login_ts / 1000,
+                                            tz=timezone.utc)
+                print(f"{username} last logged in at {dt}")
+                return dt
+            else:
+                print(f"No login data for {username}")
+                return None
 
 @bot.command(name="adduser")
 async def add_user(ctx, minecraft_username: str):
@@ -114,7 +115,7 @@ def save_monitored_users():
 @bot.command(name="getlogin")
 async def get_login(ctx, username: str):
     """Command to get the last login of a specified player from Plancke.io."""
-    last_login = await get_last_login_from_plancke(username)
+    last_login = await get_last_login_from_hypixel(username)
 
     if last_login:
         await ctx.send(f"**{username}** last logged in at **{last_login}**")
@@ -129,7 +130,7 @@ async def update_login_cache():
     last_login_cache = {}
     for user_list in user_monitored_users.values():
         for username in user_list:
-            last_login = await get_last_login_from_plancke(username)
+            last_login = await get_last_login_from_hypixel(username)
             if last_login:
                 last_login_cache[username] = last_login
 
