@@ -11,7 +11,7 @@ from keep_alive import keep_alive
 
 
 CHANNEL_ID = '623835976053162004'
-HYPIXEL_API_KEY = os.getenv("HYPIXEL_API_KEY")
+HYPIXEL_API_KEY = os.environ['HYPIXEL_API_KEY']
 
 
 intents = discord.Intents.default()
