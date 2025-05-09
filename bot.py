@@ -7,6 +7,8 @@ import aiohttp
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime, timedelta, timezone
+from keep_alive import keep_alive
+
 
 CHANNEL_ID = '623835976053162004'
 
@@ -186,6 +188,7 @@ async def last_online(ctx):
     else:
         await ctx.send("No login information available.")
 
+keep_alive()
 token = os.environ['DISCORD_BOT_TOKEN']
 client.run(token)
 
