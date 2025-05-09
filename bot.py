@@ -190,5 +190,5 @@ async def last_online(ctx):
 
 keep_alive()
 token = os.environ['DISCORD_BOT_TOKEN']
-client.run(token)
+bot.run(token)
 
