@@ -2,3 +2,4 @@ discord.py
 pytz
 aiohttp
 flask
+beautifulsoup4
